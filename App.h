@@ -36,6 +36,11 @@
         Registers calib;
     };
 
+    struct BMP280Compensated {
+        double temperature; // in °C
+        double pressure;    // in hPa
+    };
+
     BMP280RawData readBMP280Data() {
         BMP280RawData data{};
         
@@ -97,4 +102,46 @@
         close(file);
         return data;
 }
+
+BMP280Compensated compensateBMP280(const BMP280RawData &data) {
+    BMP280Compensated result;
+
+    // ------------------------
+    // Temperature Compensation
+    // ------------------------
+    int32_t adc_T = data.adc_T;
+    const auto &c = data.calib;
+
+    // Use floating-point formula from datasheet
+    double var1 = (adc_T / 16384.0 - c.dig_T1 / 1024.0) * c.dig_T2;
+    double var2 = ((adc_T / 131072.0 - c.dig_T1 / 8192.0) * (adc_T / 131072.0 - c.dig_T1 / 8192.0)) * c.dig_T3;
+    double t_fine = var1 + var2;
+
+    result.temperature = t_fine / 5120.0;
+
+    // ------------------------
+    // Pressure Compensation
+    // ------------------------
+    int32_t adc_P = data.adc_P;
+
+    double varP1 = t_fine / 2.0 - 64000.0;
+    double varP2 = varP1 * varP1 * c.dig_P6 / 32768.0;
+    varP2 = varP2 + varP1 * c.dig_P5 * 2.0;
+    varP2 = varP2 / 4.0 + c.dig_P4 * 65536.0;
+    double varP3 = (c.dig_P3 * varP1 * varP1 / 524288.0 + c.dig_P2 * varP1) / 524288.0;
+    varP1 = (1.0 + varP3 / 32768.0) * c.dig_P1;
+
+    double pressure = 1048576.0 - adc_P;
+    pressure = (pressure - varP2 / 4096.0) * 6250.0 / varP1;
+
+    varP1 = c.dig_P9 * pressure * pressure / 2147483648.0;
+    varP2 = pressure * c.dig_P8 / 32768.0;
+    pressure = pressure + (varP1 + varP2 + c.dig_P7) / 16.0;
+
+    // Convert from Pa to hPa
+    result.pressure = pressure / 100.0;
+
+    return result;
+}
+
 #endif
