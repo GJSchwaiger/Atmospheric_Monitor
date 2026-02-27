@@ -1,37 +1,43 @@
-#include"App.h"
+#include <iostream>
+#include <unistd.h>
+#include "bmp280.h"
+#include "driver_bmp280_interface.h"
 
-int main() {
+int main()
+{
+    bmp280_handle_t handle;
+    uint8_t res;
 
-    try {
-        // -------------------------------
-        // Step 1: Read raw data from sensor
-        // This includes ADC values and calibration constants
-        // -------------------------------
-        BMP280RawData rawData = readBMP280Data();
+    // Initialize BMP280
+    res = bmp280_init(&handle);
+    if (res != 0)
+    {
+        std::cerr << "Failed to initialize BMP280! Error code: " << (int)res << std::endl;
+        return -1;
+    }
+    std::cout << "BMP280 initialized successfully." << std::endl;
 
-        // -------------------------------
-        // Step 2: Apply compensation formulas
-        // This converts raw ADC readings into °C and hPa
-        // -------------------------------
-        BMP280Compensated compensated = compensateBMP280(rawData);
+    while (true)
+    {
+        uint32_t temp_raw = 0;
+        float temp_c = 0.0f;
+        uint32_t pres_raw = 0;
+        float pres_hpa = 0.0f;
 
-        // -------------------------------
-        // Step 3: Print the results
-        // -------------------------------
-        cout << "Temperature: " << compensated.temperature << " °C\n";
-        cout << "Pressure: " << compensated.pressure << " hPa\n";
+        // Read temperature & pressure
+        res = bmp280_read_temperature_pressure(&handle, &temp_raw, &temp_c, &pres_raw, &pres_hpa);
+        if (res != 0)
+        {
+            std::cerr << "Failed to read BMP280! Error code: " << (int)res << std::endl;
+        }
+        else
+        {
+            std::cout << "Temperature: " << temp_c << " °C, "
+                      << "Pressure: " << pres_hpa << " hPa" << std::endl;
+        }
 
-    } catch (const std::exception &e) {
-        // -------------------------------
-        // Step 4: Handle any errors
-        // 'e.what()' returns a string describing the error
-        // This happens if, for example, I2C cannot open or read fails
-        // -------------------------------
-        cerr << "Error: " << e.what() << "\n";
-        return 1; // Exit the program with error code 1
+        sleep(1);
     }
 
-
-    return 0; // Exit normally
-    
+    return 0;
 }
