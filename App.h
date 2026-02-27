@@ -12,22 +12,31 @@
     using std::cout;
     using std::endl;
 
+    // Linux exposes the I2C bus as a device file.
+    // On modern Raspberry Pi models, I2C bus 1 is /dev/i2c-1.
+    #define I2C_BUS "/dev/i2c-1"
+
+    // The BMP280’s I2C address.
+    // Most boards use 0x76, some use 0x77.
+    // Confirm using: i2cdetect -y 1
+    #define BMP280_ADDR 0x76
+
     struct Registers{
         // Temperature registers
-        uint16_t dig_T1;
+        int16_t dig_T1;
         int16_t  dig_T2;
         int16_t  dig_T3;
 
         // Pressure registers
-        uint16_t dig_P1;
-        int16_t  dig_P2;
-        int16_t  dig_P3;
-        int16_t  dig_P4;
-        int16_t  dig_P5;
-        int16_t  dig_P6;
-        int16_t  dig_P7;
-        int16_t  dig_P8;
-        int16_t  dig_P9;
+        int16_t dig_P1;
+        int16_t dig_P2;
+        int16_t dig_P3;
+        int16_t dig_P4;
+        int16_t dig_P5;
+        int16_t dig_P6;
+        int16_t dig_P7;
+        int16_t dig_P8;
+        int16_t dig_P9;
     };
 
     struct BMP280RawData {
