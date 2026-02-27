@@ -1,0 +1,1 @@
+g++ main.cpp src/driver_bmp280.c interface/driver_bmp280_interface_template.c -Isrc -Iinterface -lm

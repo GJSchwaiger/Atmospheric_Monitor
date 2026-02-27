@@ -7,6 +7,7 @@
     #include <sys/ioctl.h>     // For ioctl()
     #include <linux/i2c-dev.h> // For I2C definitions
     #include <cstdint>         // For fixed-width integers like uint8_t
+    #include "driver_bmp280.h"
 
     using std::cerr;
     using std::cout;
