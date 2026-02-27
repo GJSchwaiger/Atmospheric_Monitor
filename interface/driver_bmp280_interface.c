@@ -5,13 +5,12 @@
 #include <linux/i2c-dev.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <time.h>
+#include <string.h>
 
-// File descriptor for /dev/i2c-1
 static int i2c_fd = -1;
 
 /**
- * @brief  I2C bus init
+ * @brief  interface iic bus init
  */
 uint8_t bmp280_interface_iic_init(void)
 {
@@ -21,28 +20,28 @@ uint8_t bmp280_interface_iic_init(void)
         perror("Failed to open /dev/i2c-1");
         return 1;
     }
-    printf("I2C opened successfully, fd=%d\n", i2c_fd);
+    printf("I2C bus opened, fd=%d\n", i2c_fd);
     return 0;
 }
 
 /**
- * @brief  I2C bus deinit
+ * @brief  interface iic bus deinit
  */
 uint8_t bmp280_interface_iic_deinit(void)
 {
     if (i2c_fd >= 0)
-    {
         close(i2c_fd);
-        i2c_fd = -1;
-    }
+    i2c_fd = -1;
     return 0;
 }
 
 /**
- * @brief  I2C read
+ * @brief  interface iic read
  */
 uint8_t bmp280_interface_iic_read(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
 {
+    if (i2c_fd < 0)
+        return 1;
     if (ioctl(i2c_fd, I2C_SLAVE, addr) < 0)
     {
         perror("Failed to set I2C slave address");
@@ -55,18 +54,19 @@ uint8_t bmp280_interface_iic_read(uint8_t addr, uint8_t reg, uint8_t *buf, uint1
     }
     if (read(i2c_fd, buf, len) != len)
     {
-        perror("Failed to read from I2C device");
+        perror("Failed to read from device");
         return 1;
     }
-    printf("Read %d bytes from reg 0x%02X at addr 0x%02X\n", len, reg, addr);
     return 0;
 }
 
 /**
- * @brief  I2C write
+ * @brief  interface iic write
  */
 uint8_t bmp280_interface_iic_write(uint8_t addr, uint8_t reg, uint8_t *buf, uint16_t len)
 {
+    if (i2c_fd < 0)
+        return 1;
     if (ioctl(i2c_fd, I2C_SLAVE, addr) < 0)
     {
         perror("Failed to set I2C slave address");
@@ -74,25 +74,23 @@ uint8_t bmp280_interface_iic_write(uint8_t addr, uint8_t reg, uint8_t *buf, uint
     }
     uint8_t tmp[len + 1];
     tmp[0] = reg;
-    for (uint16_t i = 0; i < len; i++)
-        tmp[i + 1] = buf[i];
+    memcpy(tmp + 1, buf, len);
     if (write(i2c_fd, tmp, len + 1) != len + 1)
     {
-        perror("Failed to write to I2C device");
+        perror("Failed to write to device");
         return 1;
     }
-    printf("Wrote %d bytes to reg 0x%02X at addr 0x%02X\n", len, reg, addr);
     return 0;
 }
 
-/* SPI functions (not used) */
+/* SPI not used on Linux */
 uint8_t bmp280_interface_spi_init(void) { return 0; }
 uint8_t bmp280_interface_spi_deinit(void) { return 0; }
 uint8_t bmp280_interface_spi_read(uint8_t reg, uint8_t *buf, uint16_t len) { return 0; }
 uint8_t bmp280_interface_spi_write(uint8_t reg, uint8_t *buf, uint16_t len) { return 0; }
 
 /**
- * @brief  Delay in milliseconds
+ * @brief  delay in ms
  */
 void bmp280_interface_delay_ms(uint32_t ms)
 {
@@ -100,7 +98,7 @@ void bmp280_interface_delay_ms(uint32_t ms)
 }
 
 /**
- * @brief  Debug print
+ * @brief  debug print
  */
 void bmp280_interface_debug_print(const char *const fmt, ...)
 {
