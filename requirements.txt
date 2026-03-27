@@ -1,3 +1,5 @@
 adafruit-circuitpython-bmp280
 adafruit-circuitpython-scd4x
-PyQt6 pyqtgraph numpy
+PyQt6 
+pyqtgraph 
+numpy
